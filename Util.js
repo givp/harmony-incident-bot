@@ -10,16 +10,19 @@ module.exports = class Util {
     this.mainnetIncidents = null
     this.testnetIncidents = null
     this.bridgeIncidents = null
-    this.since = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    this.explorerIncidents = null
+    this.since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     this.until = new Date().toISOString()
     this.rpcId = 'PZFB95J'
-    this.mainnetId = 'PE6T1VU'
-    this.testnetId = 'PD5IEJA'
+    this.mainnetId = 'PFOORY4'
+    this.testnetId = 'PY2CQ6R'
     this.bridgeId = 'P4LXP5X'
+    this.explorerId = 'P01KPMI'
     this.rpcDuration = 0
     this.mainnetDuration = 0
     this.testnetDuration = 0
     this.bridgeDuration = 0
+    this.explorerDuration = 0
     this.averageUptimePercent = 100
   }
 
@@ -65,6 +68,11 @@ module.exports = class Util {
         description = 'Degregated performance'
         duration = vm.bridgeDuration
         break;
+      case 'explorer':
+        title = 'Explorer incidents'
+        description = 'Degregated performance'
+        duration = vm.explorerDuration
+        break;
     }
 
     let durationRange = `${Math.floor(duration / 60)} ${pluralize('hour', Math.floor(duration / 60))} & ${duration % 60 } ${pluralize('minute', duration % 60)}`
@@ -75,11 +83,11 @@ module.exports = class Util {
       durationRange = `${Math.floor(duration / 60)} ${pluralize('hour', Math.floor(duration / 60))}`
     }
 
-    let body = `**${title} (${moment(this.since).format('D MMM YYYY')} - ${moment(this.until).format('D MMM YYYY')})**\n`
+    let body = `**${title}**\n`
     body += `Total number of incidents: (${incidents.length }) - ${description} for ${durationRange}\n\n`
 
     _.each(incidents, function (i) {
-      body += `- ${moment(i.last_status_change_at).format('D MMM YYYY')} at ${moment(i.created_at).format('hh:mm a')} UTC (${i.duration} mins)\n`
+      body += `- ${moment(i.last_status_change_at).format('D MMM YYYY')} at ${moment(i.created_at).format('hh:mm a')} PT (${i.duration} mins)\n`
     })
 
     body += `\n\n`
@@ -108,6 +116,10 @@ module.exports = class Util {
       body += this.formatService('bridge', this.bridgeIncidents)
     }
 
+    if (this.explorerIncidents && this.explorerIncidents.length) {
+      body += this.formatService('explorer', this.explorerIncidents)
+    }
+
     if (body.length < 1) {
       return null
     }
@@ -124,7 +136,7 @@ module.exports = class Util {
       limit: 100,
       total: true,
       // time_zone: 'America/Los_Angeles',
-      service_ids: [vm.rpcId, vm.mainnetId, vm.testnetId, vm.bridgeId],
+      service_ids: [vm.rpcId, vm.mainnetId, vm.testnetId, vm.bridgeId, vm.explorerId],
       since: vm.since,
       until: vm.until
     }
@@ -155,12 +167,14 @@ module.exports = class Util {
     vm.mainnetIncidents = vm.filterByService(vm.mainnetId)
     vm.testnetIncidents = vm.filterByService(vm.testnetId)
     vm.bridgeIncidents = vm.filterByService(vm.bridgeId)
+    vm.explorerIncidents = vm.filterByService(vm.explorerId)
 
     // get total duration for each service
     vm.rpcDuration = _.sumBy(vm.rpcIncidents, function (o) { return o.duration })
     vm.mainnetDuration = _.sumBy(vm.mainnetIncidents, function (o) { return o.duration })
     vm.testnetDuration = _.sumBy(vm.testnetIncidents, function (o) { return o.duration })
     vm.bridgeDuration = _.sumBy(vm.bridgeIncidents, function (o) { return o.duration })
+    vm.explorerDuration = _.sumBy(vm.explorerIncidents, function (o) { return o.duration })
 
     // get overall uptime
     const periodMinutes = vm.getMinutes(vm.until, vm.since)
@@ -169,7 +183,8 @@ module.exports = class Util {
     const mainnetUptime = 100 - (vm.mainnetDuration / periodMinutes * 100)
     const testnetUptime = 100 - (vm.testnetDuration / periodMinutes * 100)
     const bridgeUptime = 100 - (vm.bridgeDuration / periodMinutes * 100)
+    const explorerUptime = 100 - (vm.explorerDuration / periodMinutes * 100)
 
-    vm.averageUptimePercent = ((rpcUptime + mainnetUptime + testnetUptime + bridgeUptime) / 4).toFixed(2)
+    vm.averageUptimePercent = ((rpcUptime + mainnetUptime + testnetUptime + bridgeUptime + explorerUptime) / 5).toFixed(4)
   }
 }
